@@ -10,13 +10,14 @@ be useful:
 
 * Build documentation for Mozilla
 
-https://developer.mozilla.org/en/Build_Documentation
+`https://developer.mozilla.org/en/Build_Documentation`
+
 Inside this document, you might want to look into the build prerequisities
 according to the system your are working on.
 
 * Simple Firefox build tutorial
 
-https://developer.mozilla.org/En/Simple_Firefox_build
+`https://developer.mozilla.org/En/Simple_Firefox_build`
 
 ### Install the CCNx browser patch
 
