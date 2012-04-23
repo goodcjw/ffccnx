@@ -10,13 +10,14 @@ be useful:
 
 * Build documentation for Mozilla
 
-https://developer.mozilla.org/en/Build_Documentation
+`https://developer.mozilla.org/en/Build_Documentation`
+
 Inside this document, you might want to look into the build prerequisities
 according to the system your are working on.
 
 * Simple Firefox build tutorial
 
-https://developer.mozilla.org/En/Simple_Firefox_build
+`https://developer.mozilla.org/En/Simple_Firefox_build`
 
 ### Install the CCNx browser patch
 
@@ -61,3 +62,16 @@ different systems.
 The problem might come from the crashreport. A simple walkaround is to disable
 crashreport. Add a line `ac_add_options --disable-crashreporter` into the
 `.mozconfig` file.
+
+* Got some error related to -fPIC while linking against libcrypto.a
+
+It is probably that the libcrypto.a file you are using was not compiled
+with `-fPIC` option. Download openssl source code from `www.openssl.org` and
+configure, make and install it with
+
+    ./config --prefix=/usr --shared -fPIC
+    make
+    sudo make install
+
+You may need to recompile `libccn.a` afterwords to make sure that it's static
+link towards `libcrypto.a` is consistent with the new one.
