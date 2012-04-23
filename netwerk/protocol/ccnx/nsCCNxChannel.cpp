@@ -46,6 +46,12 @@
 #include "nsIOService.h"
 #include "nsILoadGroup.h"
 #include "nsIURL.h"
+#include "prlog.h"
+
+#if defined(PR_LOGGING)
+extern PRLogModuleInfo* gCCNxLog;
+#endif
+#define LOG(args)         PR_LOG(gCCNxLog, PR_LOG_DEBUG, args)
 
 //#include <ccn/ccn.h>
 #define NS_GENERIC_CONTENT_SNIFFER \
@@ -391,7 +397,7 @@ nsCCNxChannel::OnDataAvailable(nsIRequest *request, nsISupports *ctxt,
                                nsIInputStream *stream, PRUint32 offset,
                                PRUint32 count) {
   SUSPEND_PUMP_FOR_SCOPE();
-
+  LOG(("nsCCNxChannel::OnDataAvailable @%p", this));
   nsresult rv = mListener->OnDataAvailable(this, mListenerContext, stream,
                                            offset, count);
   /*
@@ -422,18 +428,20 @@ CallUnknownTypeSniffer(void *aClosure, const PRUint8 *aData, PRUint32 aCount);
 
 NS_IMETHODIMP
 nsCCNxChannel::OnStartRequest(nsIRequest *request, nsISupports *ctxt) {
+  LOG(("nsCCNxChannel::OnStartRequest @%p", this));
   // If our content type is unknown, then use the content type sniffer.  If the
   // sniffer is not available for some reason, then we just keep going as-is.
   if (NS_SUCCEEDED(mStatus) && mContentType.EqualsLiteral(UNKNOWN_CONTENT_TYPE)) {
+    LOG(("nsCCNxChannel:: CallUnknownTypeSniffers @%p", this));
     mPump->PeekStream(CallUnknownTypeSniffer, static_cast<nsIChannel*>(this));
   }
 
   // Now, the general type sniffers. Skip this if we have none.
-  /*
   if ((mLoadFlags & LOAD_CALL_CONTENT_SNIFFERS) &&
-      gIOService->GetContentSniffers().Count() != 0)
+      gIOService->GetContentSniffers().Count() != 0) {
+    LOG(("nsCCNxChannel:: CallTypeSniffers @%p", this));
     mPump->PeekStream(CallTypeSniffers, static_cast<nsIChannel*>(this));
-  */
+  }
   SUSPEND_PUMP_FOR_SCOPE();
 
   return mListener->OnStartRequest(this, mListenerContext);
@@ -472,6 +480,8 @@ nsCCNxChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt,
 
 static void
 CallTypeSniffers(void *aClosure, const PRUint8 *aData, PRUint32 aCount) {
+  LOG(("CallTypeSniffers"));
+
   nsIChannel *chan = static_cast<nsIChannel*>(aClosure);
 
   const nsCOMArray<nsIContentSniffer>& sniffers =
@@ -490,6 +500,8 @@ CallTypeSniffers(void *aClosure, const PRUint8 *aData, PRUint32 aCount) {
 
 static void
 CallUnknownTypeSniffer(void *aClosure, const PRUint8 *aData, PRUint32 aCount) {
+  LOG(("CallUnknownTypeSniffer"));
+
   nsIChannel *chan = static_cast<nsIChannel*>(aClosure);
 
   nsCOMPtr<nsIContentSniffer> sniffer =
