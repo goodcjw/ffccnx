@@ -58,6 +58,7 @@ nsCCNxInputStream::nsCCNxInputStream(nsCCNxTransport* trans)
     : mTransport(trans)
     , mReaderRefCnt(0)
     , mByteCount(0)
+    , mCCNxStream(NULL)
     , mCondition(NS_OK)
     , mCallbackFlags(0) {
   LOG(("create nsCCNxInputStream @%p", this));
@@ -112,58 +113,82 @@ NS_IMETHODIMP
 nsCCNxInputStream::Read(char *buf, PRUint32 count, PRUint32 *countRead) {
   int res;
 
+  LOG(("nsCCNxInputStream::Read request, count=%d\n", count));
   //  return NS_ERROR_NOT_IMPLEMENTED;
-  *countRead = 0;
-
-  struct ccn_fetch_stream *ccnfs;
-  {
-    MutexAutoLock lock(mTransport->mLock);
-
-    // TODO: how this works?
-    if (NS_FAILED(mCondition))
-      return (mCondition == NS_BASE_STREAM_CLOSED) ? NS_OK : mCondition;
-
-    ccnfs = mTransport->CCNX_GetLocked();
-    if (!ccnfs)
-      return NS_BASE_STREAM_CLOSED;
-  }
-
-  // Actually reading process
-  // ccn_fetch_read is non-blocking, so we have to block it manually
-  // however, the bright side is that we don't need to move ccn_fetch_open
-  // here. It must be non-blocking as well.
-  //  res = ccn_fetch_read(ccnfs, buf, count);
+  int byteRead = 0;
+  int byteLeft = count;
 
   nsresult rv;
   {
     MutexAutoLock lock(mTransport->mLock);
-    while ((res = ccn_fetch_read(ccnfs, buf, count)) != 0) {
+
+    if (NS_FAILED(mCondition))
+      return (mCondition == NS_BASE_STREAM_CLOSED) ? NS_OK : mCondition;
+
+    if (!mCCNxStream) {
+      LOG(("nsCCNxInputStream CCNX_GetLocked"));
+      mCCNxStream = mTransport->CCNX_GetLocked();
+    }
+
+    if (!mCCNxStream) {
+      LOG(("nsCCNxInputStream Error: NS_BASE_STREAM_CLOSED"));
+      return NS_BASE_STREAM_CLOSED;
+    }
+
+    // Actually reading process
+    // ccn_fetch_read is non-blocking, so we have to block it manually
+    // however, the bright side is that we don't need to move ccn_fetch_open
+    // here. It must be non-blocking as well.
+    // res = ccn_fetch_read(mCCNxStream, buf, count);
+
+    while ((res = ccn_fetch_read(mCCNxStream, &buf[byteRead], byteLeft)) != 0) {
       if (res > 0) {
-        *countRead += res;
+        byteRead += res;
+        if (res < byteLeft) {
+          LOG(("nsCCNxInputStream::Read insufficient ccn_fetch_read "
+               "res=%d byteLeft=%d",
+               res, byteLeft));
+          // this ensures that byteLeft is always greater than 0
+          byteLeft -= res;
+        } else if (res == byteLeft) {
+          LOG(("nsCCNxInputStream::Read ccn_fetch_read complete"));
+          break;
+        } else {
+          LOG(("WARNNING!!! nsCCNxInputStream::Read ccn_fetch_read overread "
+               "res=%d byteLeft=%d",
+               res, byteLeft));
+          break;
+        }
       } else if (res == CCN_FETCH_READ_NONE) {
         if (ccn_run(mTransport->mCCNx, 1000) < 0) {
-          res = CCN_FETCH_READ_NONE;
-        }
-      } else if (res == CCN_FETCH_READ_TIMEOUT) {
-        ccn_reset_timeout(ccnfs);
-        if (ccn_run(mTransport->mCCNx, 1000) < 0) {
+          LOG(("nsCCNxInputStream::Read CCN_FETCH_READ_NONE"));
           res = CCN_FETCH_READ_NONE;
           break;
         }
-      } else {
-        // CCN_FETCH_READ_NONE
-        // CCN_FETCH_READ_END
-        // and other errors
+      } else if (res == CCN_FETCH_READ_TIMEOUT) {
+        ccn_reset_timeout(mCCNxStream);
+        if (ccn_run(mTransport->mCCNx, 1000) < 0) {
+          LOG(("nsCCNxInputStream::Read CCN_FETCH_READ_TIMEOUT"));
+          res = CCN_FETCH_READ_NONE;
+          break;
+        }
+      } else if (res == CCN_FETCH_READ_END) {
+        // All data has been transfered via CCNx
+        LOG(("nsCCNxInputStream::Read CCN_FETCH_READ_END"));
+      LOG(("nsCCNxInputStream CCNX_ReleaseLocked"));
+        mTransport->CCNX_ReleaseLocked(mCCNxStream);
+        mCCNxStream = NULL;
         break;
       }
     }
-    mTransport->CCNX_ReleaseLocked(ccnfs);
   }
 
   mCondition = ErrorAccordingToCCNX(res);
-  mByteCount = *countRead;
+  mByteCount += byteRead;
+  *countRead = byteRead;
   rv = mCondition;
-  LOG(("nsCCNxInputStream::Read %d", mByteCount));
+  LOG(("nsCCNxInputStream::Read count=%d countRead=%d mByteCount=%d",
+       count, *countRead, mByteCount));
   return rv;
 }
 

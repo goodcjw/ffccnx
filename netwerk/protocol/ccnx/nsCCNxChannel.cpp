@@ -42,18 +42,19 @@
 #include "nsChannelProperties.h"
 #include "nsMimeTypes.h"
 #include "nsCOMArray.h"
-#include "nsIContentSniffer.h"
 #include "nsIOService.h"
-#include "nsILoadGroup.h"
-#include "nsIURL.h"
 #include "prlog.h"
+
+#include "nsIContentSniffer.h"
+#include "nsILoadGroup.h"
+#include "nsIMIMEService.h"
+#include "nsIURL.h"
 
 #if defined(PR_LOGGING)
 extern PRLogModuleInfo* gCCNxLog;
 #endif
 #define LOG(args)         PR_LOG(gCCNxLog, PR_LOG_DEBUG, args)
 
-//#include <ccn/ccn.h>
 #define NS_GENERIC_CONTENT_SNIFFER \
   "@mozilla.org/network/content-sniffer;1"
 
@@ -168,6 +169,17 @@ nsCCNxChannel::OpenContentStream(bool async, nsIInputStream **stream,
   if (NS_FAILED(rv)) {
     NS_RELEASE(ndncore);
     return rv;
+  }
+
+  // Use file extension to infer content type
+  nsCAutoString contentType;
+  nsCOMPtr<nsIMIMEService> mime = do_GetService("@mozilla.org/mime;1", &rv);
+  if (NS_SUCCEEDED(rv)) {
+    mime->GetTypeFromURI(mURI, contentType);
+  }
+  if (!contentType.IsEmpty()) {
+    LOG(("nsCCNxChannel SetContentType by mime->GetTypeFromURI"));
+    SetContentType(contentType);
   }
 
   *stream = ndncore;
@@ -311,6 +323,9 @@ nsCCNxChannel::GetContentType(nsACString &aContentType) {
 
 NS_IMETHODIMP
 nsCCNxChannel::SetContentType(const nsACString &aContentType) {
+  const char* aContentTypeStr;
+  aContentType.GetData(&aContentTypeStr);
+  LOG(("nsCCNxChannel::SetContentType %s", aContentTypeStr));
   // mContentCharset is unchanged if not parsed
   bool dummy;
   net_ParseContentType(aContentType, mContentType, mContentCharset, &dummy);

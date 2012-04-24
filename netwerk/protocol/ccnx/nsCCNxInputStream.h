@@ -67,6 +67,7 @@ private:
   PRUint64                            mByteCount;
 
   // access to these is protected by mTransport->mLock
+  struct ccn_fetch_stream            *mCCNxStream;
   nsresult                            mCondition;
   nsCOMPtr<nsIInputStreamCallback>    mCallback;
   PRUint32                            mCallbackFlags;
