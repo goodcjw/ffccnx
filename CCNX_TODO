@@ -4,6 +4,8 @@
 -- Clean up memory
 
 -- It seems one thread (maybe the nsNDNTransportService) is still running after
-   page loading. Need to clean that
+   page loading. Need to clean that. However, if run the firefox program with
+   LOG module loaded up, this bug does not show up at all. All threads are released
+   as they should.
 
 

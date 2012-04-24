@@ -1,5 +1,10 @@
 ## README ##
 
+A CCNx enabled Firefox browser. The current version support all file formats
+(including pure text, html, image and video) to be transmitted into the browser
+and rendered by the browser. All modification are inside the netwerk module, so
+it is still possible to strip all code out as a standalone plugin.
+
 Tested on:
 
 Mac OS X 10.7
