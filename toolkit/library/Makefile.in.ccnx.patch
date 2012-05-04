@@ -1,0 +1,11 @@
+diff --git a/toolkit/library/Makefile.in b/toolkit/library/Makefile.in
+index 20df295..0cb339e 100644
+--- a/toolkit/library/Makefile.in
++++ b/toolkit/library/Makefile.in
+@@ -596,3 +596,5 @@ ifeq (WINNT_1,$(OS_TARGET)_$(MOZ_PROFILE_USE))
+ # Wrap linker to measure peak virtual memory usage.
+ LD := $(PYTHON) $(topsrcdir)/build/link.py $(CURDIR)/linker-vsize $(LD)
+ endif
++
++EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
+\ No newline at end of file
