@@ -145,3 +145,8 @@ include $(topsrcdir)/ipc/chromium/chromium-config.mk
 include $(topsrcdir)/config/rules.mk
 
 DEFINES += -DIMPL_NS_NET
+
+# Shared libraries for libccn
+EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
+# Shared libraries for libgstreamer
+EXTRA_DSO_LDOPTS += -lgstreamer-0.10

@@ -28,7 +28,6 @@ MAKE_FRAMEWORK=1
 endif
 
 VPATH += $(topsrcdir)/build/
-CPPSRCS += $(STDCXX_COMPAT)
 
 ifeq ($(OS_ARCH)_$(GNU_CC),WINNT_)
 CPPSRCS += dlldeps-xul.cpp
@@ -105,7 +104,6 @@ STATIC_LIBS += \
   mozipc_s \
   mozipdlgen_s \
   ipcshell_s \
-  gfx2d \
   gfxipc_s \
   hal_s \
   dombindings_s \
@@ -334,19 +332,20 @@ endif
 
 EXTRA_DSO_LDOPTS += \
   $(LIBS_DIR) \
-  $(JPEG_LIBS) \
-  $(PNG_LIBS) \
-  $(QCMS_LIBS) \
   $(MOZ_JS_LIBS) \
   $(NSS_LIBS) \
-  $(MOZ_CAIRO_LIBS) \
+  $(MOZ_CAIRO_OSLIBS) \
   $(MOZ_HARFBUZZ_LIBS) \
   $(MOZ_APP_EXTRA_LIBS) \
   $(SQLITE_LIBS) \
   $(NULL)
 
-ifdef MOZ_GRAPHITE
-EXTRA_DSO_LDOPTS += $(MOZ_GRAPHITE_LIBS)
+ifdef MOZ_NATIVE_JPEG
+EXTRA_DSO_LDOPTS += $(JPEG_LIBS)
+endif
+
+ifdef MOZ_NATIVE_PNG
+EXTRA_DSO_LDOPTS += $(PNG_LIBS)
 endif
 
 ifdef MOZ_NATIVE_ZLIB
@@ -523,7 +522,7 @@ endif
 endif
 
 ifeq ($(OS_ARCH),WINNT)
-OS_LIBS += $(call EXPAND_LIBNAME,shell32 ole32 version winspool comdlg32 imm32 msimg32 shlwapi psapi ws2_32 dbghelp rasapi32 rasdlg iphlpapi uxtheme setupapi secur32)
+OS_LIBS += $(call EXPAND_LIBNAME,shell32 ole32 version winspool comdlg32 imm32 msimg32 shlwapi psapi ws2_32 dbghelp rasapi32 rasdlg iphlpapi uxtheme setupapi secur32 sensorsapi portabledeviceguids windowscodecs)
 ifdef MOZ_CRASHREPORTER
 OS_LIBS += $(call EXPAND_LIBNAME,wininet)
 endif
@@ -553,6 +552,10 @@ endif
 
 ifdef MOZ_ENABLE_QT
 EXTRA_DSO_LDOPTS += $(MOZ_QT_LDFLAGS) $(XEXT_LIBS)
+endif
+
+ifdef MOZ_GSTREAMER
+EXTRA_DSO_LDOPTS += $(GSTREAMER_LIBS)
 endif
 
 include $(topsrcdir)/config/rules.mk
@@ -596,5 +599,3 @@ ifeq (WINNT_1,$(OS_TARGET)_$(MOZ_PROFILE_USE))
 # Wrap linker to measure peak virtual memory usage.
 LD := $(PYTHON) $(topsrcdir)/build/link.py $(CURDIR)/linker-vsize $(LD)
 endif
-
-EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
