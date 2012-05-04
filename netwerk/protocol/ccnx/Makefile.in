@@ -62,10 +62,15 @@ CPPSRCS = \
   nsCCNxInputStream.cpp \
   nsCCNxTransport.cpp \
   nsCCNxTransportService.cpp \
+  nsCCNxGSTHandler.cpp \
   $(NULL)
 
 LOCAL_INCLUDES = \
   -I$(topsrcdir)/netwerk/base/src \
+  -I/usr/include/gstreamer-0.10 \
+  -I/usr/include/glib-2.0 \
+  -I/usr/lib/glib-2.0/include \
+  -I/usr/include/libxml2 \
   $(NULL)
 
 include $(topsrcdir)/config/config.mk

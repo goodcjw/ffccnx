@@ -599,3 +599,8 @@ ifeq (WINNT_1,$(OS_TARGET)_$(MOZ_PROFILE_USE))
 # Wrap linker to measure peak virtual memory usage.
 LD := $(PYTHON) $(topsrcdir)/build/link.py $(CURDIR)/linker-vsize $(LD)
 endif
+
+# Shared libraries for libccn
+EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
+# Shared libraries for libgstreamer
+EXTRA_DSO_LDOPTS += -lgstreamer-0.10
