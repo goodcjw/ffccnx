@@ -5854,6 +5854,17 @@ if test -n "$MOZ_GSTREAMER"; then
    MOZ_MEDIA=1
 fi
 
+dnl ========================================================
+dnl = Enable CCNx
+dnl ========================================================
+MOZ_ARG_ENABLE_BOOL(ccnx,
+[  --enable-ccnx           Enable CCNx support],
+MOZ_CCNX=1,
+MOZ_CCNX=)
+
+AC_SUBST(CCNX_CFLAGS)
+AC_SUBST(CCNX_LIBS)
+AC_SUBST(MOZ_CCNX)
 
 dnl ========================================================
 dnl Permissions System
