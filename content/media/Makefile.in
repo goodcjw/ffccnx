@@ -117,6 +117,10 @@ ifdef MOZ_GSTREAMER
 PARALLEL_DIRS += gstreamer
 endif
 
+ifdef MOZ_CCNX
+PARALLEL_DIRS += gstccnx
+endif
+
 ifdef ENABLE_TESTS
 PARALLEL_DIRS += test
 endif
