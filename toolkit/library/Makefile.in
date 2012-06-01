@@ -602,5 +602,3 @@ endif
 
 # Shared libraries for libccn
 EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
-# Shared libraries for libgstreamer
-EXTRA_DSO_LDOPTS += -lgstreamer-0.10

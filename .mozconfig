@@ -13,6 +13,9 @@ mk_add_options MOZ_MAKE_FLAGS="-s -j8"
 # Enable debug builds
 ac_add_options --enable-debug
 
+# Enable gstreamer
+ac_add_options --enable-gstreamer
+
 # Turn off compiler optimization. This will make applications run slower,
 # will allow you to debug the applications under a debugger, like GDB.
 ac_add_options --disable-optimize
