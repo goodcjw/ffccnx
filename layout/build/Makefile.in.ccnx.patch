@@ -1,0 +1,28 @@
+diff --git a/layout/build/Makefile.in b/layout/build/Makefile.in
+index 1e31a44..2005715 100644
+--- a/layout/build/Makefile.in
++++ b/layout/build/Makefile.in
+@@ -189,6 +189,12 @@ SHARED_LIBRARY_LIBS 	+= \
+ 	$(NULL)
+ endif
+ 
++ifdef MOZ_CCNX
++SHARED_LIBRARY_LIBS 	+= \
++	$(DEPTH)/content/media/gstccnx/$(LIB_PREFIX)gkcongstccnx_s.$(LIB_SUFFIX) \
++	$(NULL)
++endif
++
+ ifdef NS_PRINTING
+ SHARED_LIBRARY_LIBS += \
+ 		../printing/$(LIB_PREFIX)gkprinting_s.$(LIB_SUFFIX) \
+@@ -233,6 +239,10 @@ ifdef MOZ_GSTREAMER
+ EXTRA_DSO_LDOPTS += $(GSTREAMER_LIBS)
+ endif
+ 
++ifdef MOZ_CCNX
++EXTRA_DSO_LDOPTS += $(CCNX_LIBS)
++endif
++
+ include $(topsrcdir)/config/config.mk
+ include $(topsrcdir)/ipc/chromium/chromium-config.mk
+ 
