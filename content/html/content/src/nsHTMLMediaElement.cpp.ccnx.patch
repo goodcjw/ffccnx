@@ -69,7 +69,7 @@ index ea92c4b..f3fd06a 100644
 +
 +#ifdef MOZ_GSTREAMER 
 +  if (IsCCNxType(aType)) {
-+    nsRefPtr<nsGStreamerDecoder> decoder = new nsGstCCNxDecoder();
++    nsRefPtr<nsGstCCNxDecoder> decoder = new nsGstCCNxDecoder();
 +    if (decoder->Init(this)) {
 +      return decoder.forget();
 +    }

@@ -2344,9 +2344,9 @@ nsHTMLMediaElement::CreateDecoder(const nsACString& aType)
   }
 #endif
 
-#ifdef MOZ_GSTREAMER 
+#ifdef MOZ_CCNX
   if (IsCCNxType(aType)) {
-    nsRefPtr<nsGStreamerDecoder> decoder = new nsGstCCNxDecoder();
+    nsRefPtr<nsGstCCNxDecoder> decoder = new nsGstCCNxDecoder();
     if (decoder->Init(this)) {
       return decoder.forget();
     }

@@ -328,7 +328,7 @@ public:
 #ifdef MOZ_CCNX
   static bool IsCCNxEnabled();
   static bool IsCCNxType(const nsACString& aType);
-  static const char gCCNxTypes[2][17];
+  static const char gCCNxTypes[2][24];
 #endif
 
   /**
