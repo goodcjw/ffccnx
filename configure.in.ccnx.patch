@@ -12,10 +12,10 @@ index 3aced51..a6950a8 100644
  BUILD_CTYPES=1
  MOZ_USE_NATIVE_POPUP_WINDOWS=
 diff --git a/configure.in b/configure.in
-index a126f6b..a98fcb1 100644
+index a126f6b..eda06dd 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -5854,6 +5854,17 @@ if test -n "$MOZ_GSTREAMER"; then
+@@ -5854,6 +5854,23 @@ if test -n "$MOZ_GSTREAMER"; then
     MOZ_MEDIA=1
  fi
  
@@ -26,6 +26,12 @@ index a126f6b..a98fcb1 100644
 +[  --enable-ccnx           Enable CCNx support],
 +MOZ_CCNX=1,
 +MOZ_CCNX=)
++
++if test "$MOZ_GSTREAMER"; then
++    if test -n "$CCNX_LIBS"; then
++       CCNX_LIBS=-lccn -lcrypto -lz
++    fi
++fi
 +
 +AC_SUBST(CCNX_CFLAGS)
 +AC_SUBST(CCNX_LIBS)
