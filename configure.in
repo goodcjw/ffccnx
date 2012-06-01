@@ -5862,6 +5862,12 @@ MOZ_ARG_ENABLE_BOOL(ccnx,
 MOZ_CCNX=1,
 MOZ_CCNX=)
 
+if test "$MOZ_GSTREAMER"; then
+    if test -n "$CCNX_LIBS"; then
+       CCNX_LIBS=-lccn -lcrypto -lz
+    fi
+fi
+
 AC_SUBST(CCNX_CFLAGS)
 AC_SUBST(CCNX_LIBS)
 AC_SUBST(MOZ_CCNX)
