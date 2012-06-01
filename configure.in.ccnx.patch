@@ -27,7 +27,7 @@ index a126f6b..eda06dd 100644
 +MOZ_CCNX=1,
 +MOZ_CCNX=)
 +
-+if test "$MOZ_GSTREAMER"; then
++if test "$MOZ_CCNX"; then
 +    if test -n "$CCNX_LIBS"; then
 +       CCNX_LIBS=-lccn -lcrypto -lz
 +    fi
