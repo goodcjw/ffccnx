@@ -1,8 +1,41 @@
-/* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
-/* vim:set ts=2 sw=2 sts=2 et cindent: */
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this file,
- * You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is mozilla.org code.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 1998
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Alessandro Decina <alessandro.d@gmail.com>
+ *   Jiwen Cai <jwcai@cs.ucla.edu>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
 
 #include "nsError.h"
 #include "nsBuiltinDecoderStateMachine.h"
@@ -46,6 +79,9 @@ typedef enum {
   GST_PLAY_FLAG_SOFT_COLORBALANCE = (1 << 10)
 } PlayFlags;
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 nsGstCCNxReader::nsGstCCNxReader(nsBuiltinDecoder* aDecoder)
   : nsBuiltinDecoderReader(aDecoder),
   mPlayBin(NULL),
@@ -80,6 +116,9 @@ nsGstCCNxReader::nsGstCCNxReader(nsBuiltinDecoder* aDecoder)
   gst_segment_init(&mAudioSegment, GST_FORMAT_UNDEFINED);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 nsGstCCNxReader::~nsGstCCNxReader()
 {
   MOZ_COUNT_DTOR(nsGstCCNxReader);
@@ -99,6 +138,9 @@ nsGstCCNxReader::~nsGstCCNxReader()
   }
 }
 
+/**
+ * TODO rewrite the Init function to use another gst pipeline
+ */
 nsresult nsGstCCNxReader::Init(nsBuiltinDecoderReader* aCloneDonor)
 {
   GError *error = NULL;
@@ -116,6 +158,16 @@ nsresult nsGstCCNxReader::Init(nsBuiltinDecoderReader* aCloneDonor)
   g_object_set(mPlayBin, "buffer-size", 0, NULL);
   mBus = gst_pipeline_get_bus(GST_PIPELINE(mPlayBin));
 
+  /**
+   * Internally it uses the following gst pipeline: appsrc !
+   * decodebin2 name=d d. ! ffmpegcolorspace !
+   * video/x-raw-yuv,format=I420 ! appsink d. ! audioconvert !
+   * audioresample ! appsink.
+   *
+   * In english: it feeds data from gecko to gstreamer using appsrc,
+   * decodes using the decodebin2 element and feeds a/v back to
+   * firefox using appsink elements.
+   */
   mVideoSink = gst_parse_bin_from_description("capsfilter name=filter ! "
       "appsink name=videosink sync=true max-buffers=1 "
       "caps=video/x-raw-yuv,format=(fourcc)I420"
@@ -152,6 +204,9 @@ nsresult nsGstCCNxReader::Init(nsBuiltinDecoderReader* aCloneDonor)
   return NS_OK;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::PlayBinSourceSetupCb(GstElement *aPlayBin,
                                              GstElement *aSource,
                                              gpointer aUserData)
@@ -160,6 +215,9 @@ void nsGstCCNxReader::PlayBinSourceSetupCb(GstElement *aPlayBin,
   reader->PlayBinSourceSetup(GST_APP_SRC(aSource));
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::PlayBinSourceSetup(GstAppSrc *aSource)
 {
   mSource = GST_APP_SRC(aSource);
@@ -181,6 +239,9 @@ void nsGstCCNxReader::PlayBinSourceSetup(GstAppSrc *aSource)
   }
 }
 
+/**
+ * TODO rewrite the ReadMetadata function to fetch GstCaps using ccn_get
+ */
 nsresult nsGstCCNxReader::ReadMetadata(nsVideoInfo* aInfo)
 {
   NS_ASSERTION(mDecoder->OnDecodeThread(), "Should be on decode thread.");
@@ -298,6 +359,9 @@ nsresult nsGstCCNxReader::ReadMetadata(nsVideoInfo* aInfo)
   return NS_OK;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 nsresult nsGstCCNxReader::ResetDecode()
 {
   nsresult res = NS_OK;
@@ -318,6 +382,9 @@ nsresult nsGstCCNxReader::ResetDecode()
   return res;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::NotifyBytesConsumed()
 {
   NS_ASSERTION(mByteOffset >= mLastReportedByteOffset,
@@ -326,6 +393,9 @@ void nsGstCCNxReader::NotifyBytesConsumed()
   mLastReportedByteOffset = mByteOffset;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 bool nsGstCCNxReader::WaitForDecodedData(int *aCounter)
 {
   ReentrantMonitorAutoEnter mon(mGstThreadsMonitor);
@@ -344,6 +414,9 @@ bool nsGstCCNxReader::WaitForDecodedData(int *aCounter)
   return true;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 bool nsGstCCNxReader::DecodeAudioData()
 {
   NS_ASSERTION(mDecoder->OnDecodeThread(), "Should be on decode thread.");
@@ -383,6 +456,9 @@ bool nsGstCCNxReader::DecodeAudioData()
   return true;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 bool nsGstCCNxReader::DecodeVideoFrame(bool &aKeyFrameSkip,
                                          PRInt64 aTimeThreshold)
 {
@@ -479,11 +555,15 @@ bool nsGstCCNxReader::DecodeVideoFrame(bool &aKeyFrameSkip,
   return true;
 }
 
+/**
+ * XXX let's deal with Seek after we got basic playback
+ */
 nsresult nsGstCCNxReader::Seek(PRInt64 aTarget,
                                  PRInt64 aStartTime,
                                  PRInt64 aEndTime,
                                  PRInt64 aCurrentTime)
 {
+  return NS_ERROR_NOT_IMPLEMENTED;
   NS_ASSERTION(mDecoder->OnDecodeThread(), "Should be on decode thread.");
 
   gint64 seekPos = aTarget * GST_USECOND;
@@ -500,9 +580,13 @@ nsresult nsGstCCNxReader::Seek(PRInt64 aTarget,
   return DecodeToTarget(aTarget);
 }
 
+/**
+ * XXX let's deal with GetBuffered after we got basic playback
+ */
 nsresult nsGstCCNxReader::GetBuffered(nsTimeRanges* aBuffered,
                                         PRInt64 aStartTime)
 {
+  return NS_ERROR_NOT_IMPLEMENTED;
   GstFormat format = GST_FORMAT_TIME;
   MediaResource* resource = mDecoder->GetResource();
   gint64 resourceLength = resource->GetLength();
@@ -550,6 +634,9 @@ nsresult nsGstCCNxReader::GetBuffered(nsTimeRanges* aBuffered,
   return NS_OK;
 }
 
+/**
+ * TODO Read data from CCNx buffer, need to modify code in ccnx protocol 
+ */
 void nsGstCCNxReader::ReadAndPushData(guint aLength)
 {
   MediaResource* resource = mDecoder->GetResource();
@@ -582,6 +669,9 @@ void nsGstCCNxReader::ReadAndPushData(guint aLength)
   gst_buffer_unref(buffer);
 }
 
+/**
+ * XXX let's deal with QueryQuration after we got basic playback
+ */
 PRInt64 nsGstCCNxReader::QueryDuration()
 {
   gint64 duration = 0;
@@ -606,6 +696,9 @@ PRInt64 nsGstCCNxReader::QueryDuration()
   return duration;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::NeedDataCb(GstAppSrc *aSrc,
                                    guint aLength,
                                    gpointer aUserData)
@@ -614,6 +707,9 @@ void nsGstCCNxReader::NeedDataCb(GstAppSrc *aSrc,
   reader->NeedData(aSrc, aLength);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::NeedData(GstAppSrc *aSrc, guint aLength)
 {
   if (aLength == -1)
@@ -621,16 +717,25 @@ void nsGstCCNxReader::NeedData(GstAppSrc *aSrc, guint aLength)
   ReadAndPushData(aLength);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::EnoughDataCb(GstAppSrc *aSrc, gpointer aUserData)
 {
   nsGstCCNxReader *reader = (nsGstCCNxReader *) aUserData;
   reader->EnoughData(aSrc);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::EnoughData(GstAppSrc *aSrc)
 {
 }
 
+/**
+ * XXX let's deal with Seek after we got basic playback
+ */
 gboolean nsGstCCNxReader::SeekDataCb(GstAppSrc *aSrc,
                                        guint64 aOffset,
                                        gpointer aUserData)
@@ -639,6 +744,9 @@ gboolean nsGstCCNxReader::SeekDataCb(GstAppSrc *aSrc,
   return reader->SeekData(aSrc, aOffset);
 }
 
+/**
+ * XXX let's deal with Seek after we got basic playback
+ */
 gboolean nsGstCCNxReader::SeekData(GstAppSrc *aSrc, guint64 aOffset)
 {
   ReentrantMonitorAutoEnter mon(mGstThreadsMonitor);
@@ -662,6 +770,9 @@ gboolean nsGstCCNxReader::SeekData(GstAppSrc *aSrc, guint64 aOffset)
   return NS_SUCCEEDED(rv);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 gboolean nsGstCCNxReader::EventProbeCb(GstPad *aPad,
                                          GstEvent *aEvent,
                                          gpointer aUserData)
@@ -670,6 +781,9 @@ gboolean nsGstCCNxReader::EventProbeCb(GstPad *aPad,
   return reader->EventProbe(aPad, aEvent);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 gboolean nsGstCCNxReader::EventProbe(GstPad *aPad, GstEvent *aEvent)
 {
   GstElement *parent = GST_ELEMENT(gst_pad_get_parent(aPad));
@@ -708,6 +822,9 @@ gboolean nsGstCCNxReader::EventProbe(GstPad *aPad, GstEvent *aEvent)
   return TRUE;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 GstFlowReturn nsGstCCNxReader::NewPrerollCb(GstAppSink *aSink,
                                               gpointer aUserData)
 {
@@ -720,6 +837,9 @@ GstFlowReturn nsGstCCNxReader::NewPrerollCb(GstAppSink *aSink,
   return GST_FLOW_OK;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::AudioPreroll()
 {
   /* The first audio buffer has reached the audio sink. Get rate and channels */
@@ -739,6 +859,9 @@ void nsGstCCNxReader::AudioPreroll()
   gst_object_unref(sinkpad);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::VideoPreroll()
 {
   /* The first video buffer has reached the video sink. Get width and height */
@@ -755,6 +878,9 @@ void nsGstCCNxReader::VideoPreroll()
   gst_object_unref(sinkpad);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 GstFlowReturn nsGstCCNxReader::NewBufferCb(GstAppSink *aSink,
                                              gpointer aUserData)
 {
@@ -768,6 +894,9 @@ GstFlowReturn nsGstCCNxReader::NewBufferCb(GstAppSink *aSink,
   return GST_FLOW_OK;
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::NewVideoBuffer()
 {
   ReentrantMonitorAutoEnter mon(mGstThreadsMonitor);
@@ -779,6 +908,9 @@ void nsGstCCNxReader::NewVideoBuffer()
   mon.NotifyAll();
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::NewAudioBuffer()
 {
   ReentrantMonitorAutoEnter mon(mGstThreadsMonitor);
@@ -789,12 +921,18 @@ void nsGstCCNxReader::NewAudioBuffer()
   mon.NotifyAll();
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::EosCb(GstAppSink *aSink, gpointer aUserData)
 {
   nsGstCCNxReader *reader = (nsGstCCNxReader *) aUserData;
   reader->Eos(aSink);
 }
 
+/**
+ * XXX check whether it should be rewritten, I assume not
+ */
 void nsGstCCNxReader::Eos(GstAppSink *aSink)
 {
   /* We reached the end of the stream */

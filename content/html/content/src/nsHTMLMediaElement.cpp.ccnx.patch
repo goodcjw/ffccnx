@@ -67,7 +67,7 @@ index ea92c4b..f3fd06a 100644
    }
  #endif
 +
-+#ifdef MOZ_GSTREAMER 
++#ifdef MOZ_CCNX
 +  if (IsCCNxType(aType)) {
 +    nsRefPtr<nsGstCCNxDecoder> decoder = new nsGstCCNxDecoder();
 +    if (decoder->Init(this)) {
