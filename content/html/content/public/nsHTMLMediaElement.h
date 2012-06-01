@@ -328,8 +328,7 @@ public:
 #ifdef MOZ_CCNX
   static bool IsCCNxEnabled();
   static bool IsCCNxType(const nsACString& aType);
-  static const char gCCNxTypes[1][17];
-  /* We don't need any gCCNxCodecs so far, we use WebM for video */
+  static const char gCCNxTypes[2][17];
 #endif
 
   /**
