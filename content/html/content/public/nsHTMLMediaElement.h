@@ -325,6 +325,13 @@ public:
   static char const *const gH264Codecs[6];
 #endif
 
+#ifdef MOZ_CCNX
+  static bool IsCCNxEnabled();
+  static bool IsCCNxType(const nsACString& aType);
+  static const char gCCNxTypes[1][17];
+  /* We don't need any gCCNxCodecs so far, we use WebM for video */
+#endif
+
   /**
    * Called when a child source element is added to this media element. This
    * may queue a task to run the select resource algorithm if appropriate.
