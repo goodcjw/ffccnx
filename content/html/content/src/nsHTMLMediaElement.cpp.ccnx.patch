@@ -1,0 +1,80 @@
+diff --git a/content/html/content/src/nsHTMLMediaElement.cpp b/content/html/content/src/nsHTMLMediaElement.cpp
+index ea92c4b..f3fd06a 100644
+--- a/content/html/content/src/nsHTMLMediaElement.cpp
++++ b/content/html/content/src/nsHTMLMediaElement.cpp
+@@ -113,6 +113,9 @@
+ #ifdef MOZ_GSTREAMER
+ #include "nsGStreamerDecoder.h"
+ #endif
++#ifdef MOZ_CCNX
++#include "nsGstCCNxDecoder.h"
++#endif
+ 
+ #ifdef PR_LOGGING
+ static PRLogModuleInfo* gMediaElementLog;
+@@ -2117,6 +2120,35 @@ nsHTMLMediaElement::IsH264Type(const nsACString& aType)
+ }
+ #endif
+ 
++#ifdef MOZ_CCNX
++const char nsHTMLMediaElement::gCCNxTypes[2][24] = {
++  "x-ccnx-video/webm",
++  "x-ccnx-audio/webm",
++};
++
++bool
++nsHTMLMediaElement::IsCCNxEnabled()
++{
++  return Preferences::GetBool("media.ccnx.enabled");
++}
++
++bool
++nsHTMLMediaElement::IsCCNxType(const nsACString& aType)
++{
++  if (!IsCCNxEnabled()) {
++    return false;
++  }
++
++  for (PRUint32 i = 0; i < ArrayLength(gCCNxTypes); ++i) {
++    if (aType.EqualsASCII(gCCNxTypes[i])) {
++      return true;
++    }
++  }
++
++  return false;
++}
++#endif
++
+ /* static */
+ nsHTMLMediaElement::CanPlayStatus 
+ nsHTMLMediaElement::CanHandleMediaType(const char* aMIMEType,
+@@ -2153,6 +2185,13 @@ nsHTMLMediaElement::CanHandleMediaType(const char* aMIMEType,
+     return CANPLAY_YES;
+   }
+ #endif
++
++#ifdef MOZ_CCNX
++  if (IsCCNxType(nsDependentCString(aMIMEType))) {
++    *aCodecList = gWebMCodecs;
++    return CANPLAY_YES;
++  }
++#endif
+   return CANPLAY_NO;
+ }
+ 
+@@ -2304,6 +2343,15 @@ nsHTMLMediaElement::CreateDecoder(const nsACString& aType)
+     }
+   }
+ #endif
++
++#ifdef MOZ_GSTREAMER 
++  if (IsCCNxType(aType)) {
++    nsRefPtr<nsGStreamerDecoder> decoder = new nsGstCCNxDecoder();
++    if (decoder->Init(this)) {
++      return decoder.forget();
++    }
++  }
++#endif
+   return nsnull;
+ }
+ 
