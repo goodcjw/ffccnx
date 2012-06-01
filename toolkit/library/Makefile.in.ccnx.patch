@@ -1,11 +1,15 @@
 diff --git a/toolkit/library/Makefile.in b/toolkit/library/Makefile.in
-index 20df295..0cb339e 100644
+index 1101c2f..52d337e 100644
 --- a/toolkit/library/Makefile.in
 +++ b/toolkit/library/Makefile.in
-@@ -596,3 +596,5 @@ ifeq (WINNT_1,$(OS_TARGET)_$(MOZ_PROFILE_USE))
- # Wrap linker to measure peak virtual memory usage.
- LD := $(PYTHON) $(topsrcdir)/build/link.py $(CURDIR)/linker-vsize $(LD)
+@@ -558,6 +558,10 @@ ifdef MOZ_GSTREAMER
+ EXTRA_DSO_LDOPTS += $(GSTREAMER_LIBS)
  endif
+ 
++ifdef MOZ_CCNX
++EXTRA_DSO_LDOPTS += $(CCNX_LIBS)
++endif
 +
-+EXTRA_DSO_LDOPTS += -lccn -lcrypto -lz
-\ No newline at end of file
+ include $(topsrcdir)/config/rules.mk
+ 
+ export:: $(RDF_UTIL_SRC_CPPSRCS) $(INTL_UNICHARUTIL_UTIL_CPPSRCS)
