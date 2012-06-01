@@ -11,3 +11,25 @@ index 3aced51..a6950a8 100644
  USE_ARM_KUSER=
  BUILD_CTYPES=1
  MOZ_USE_NATIVE_POPUP_WINDOWS=
+diff --git a/configure.in b/configure.in
+index a126f6b..a98fcb1 100644
+--- a/configure.in
++++ b/configure.in
+@@ -5854,6 +5854,17 @@ if test -n "$MOZ_GSTREAMER"; then
+    MOZ_MEDIA=1
+ fi
+ 
++dnl ========================================================
++dnl = Enable CCNx
++dnl ========================================================
++MOZ_ARG_ENABLE_BOOL(ccnx,
++[  --enable-ccnx           Enable CCNx support],
++MOZ_CCNX=1,
++MOZ_CCNX=)
++
++AC_SUBST(CCNX_CFLAGS)
++AC_SUBST(CCNX_LIBS)
++AC_SUBST(MOZ_CCNX)
+ 
+ dnl ========================================================
+ dnl Permissions System
