@@ -189,6 +189,12 @@ SHARED_LIBRARY_LIBS 	+= \
 	$(NULL)
 endif
 
+ifdef MOZ_CCNX
+SHARED_LIBRARY_LIBS 	+= \
+	$(DEPTH)/content/media/gstccnx/$(LIB_PREFIX)gkcongstccnx_s.$(LIB_SUFFIX) \
+	$(NULL)
+endif
+
 ifdef NS_PRINTING
 SHARED_LIBRARY_LIBS += \
 		../printing/$(LIB_PREFIX)gkprinting_s.$(LIB_SUFFIX) \
@@ -231,6 +237,10 @@ SHARED_LIBRARY_LIBS += \
 
 ifdef MOZ_GSTREAMER
 EXTRA_DSO_LDOPTS += $(GSTREAMER_LIBS)
+endif
+
+ifdef MOZ_CCNX
+EXTRA_DSO_LDOPTS += $(CCNX_LIBS)
 endif
 
 include $(topsrcdir)/config/config.mk
