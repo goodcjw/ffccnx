@@ -175,7 +175,7 @@ nsCCNxInputStream::Read(char *buf, PRUint32 count, PRUint32 *countRead) {
       } else if (res == CCN_FETCH_READ_END) {
         // All data has been transfered via CCNx
         LOG(("nsCCNxInputStream::Read CCN_FETCH_READ_END"));
-      LOG(("nsCCNxInputStream CCNX_ReleaseLocked"));
+        LOG(("nsCCNxInputStream CCNX_ReleaseLocked"));
         mTransport->CCNX_ReleaseLocked(mCCNxStream);
         mCCNxStream = NULL;
         break;

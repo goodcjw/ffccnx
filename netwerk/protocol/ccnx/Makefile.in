@@ -60,9 +60,9 @@ CPPSRCS = \
   nsCCNxCore.cpp \
   nsCCNxChannel.cpp \
   nsCCNxInputStream.cpp \
+  nsCCNxMediaInputStream.cpp \
   nsCCNxTransport.cpp \
   nsCCNxTransportService.cpp \
-  nsCCNxGSTHandler.cpp \
   $(NULL)
 
 LOCAL_INCLUDES = \
