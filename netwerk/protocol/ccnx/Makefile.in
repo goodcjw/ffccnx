@@ -63,6 +63,7 @@ CPPSRCS = \
   nsCCNxMediaInputStream.cpp \
   nsCCNxTransport.cpp \
   nsCCNxTransportService.cpp \
+  nsCCNxUtils.cpp \
   $(NULL)
 
 LOCAL_INCLUDES = \

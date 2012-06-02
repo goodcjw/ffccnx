@@ -1,0 +1,265 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
+/* ***** BEGIN LICENSE BLOCK *****
+ * Version: MPL 1.1/GPL 2.0/LGPL 2.1
+ *
+ * The contents of this file are subject to the Mozilla Public License Version
+ * 1.1 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * The Original Code is mozilla.org code.
+ *
+ * The Initial Developer of the Original Code is
+ * Netscape Communications Corporation.
+ * Portions created by the Initial Developer are Copyright (C) 2012
+ * the Initial Developer. All Rights Reserved.
+ *
+ * Contributor(s):
+ *   Jiwen Cai <jwcai@cs.ucla.edu>
+ *
+ * Alternatively, the contents of this file may be used under the terms of
+ * either the GNU General Public License Version 2 or later (the "GPL"), or
+ * the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
+ * in which case the provisions of the GPL or the LGPL are applicable instead
+ * of those above. If you wish to allow use of your version of this file only
+ * under the terms of either the GPL or the LGPL, and not to allow others to
+ * use your version of this file under the terms of the MPL, indicate your
+ * decision by deleting the provisions above and replace them with the notice
+ * and other provisions required by the GPL or the LGPL. If you do not delete
+ * the provisions above, a recipient may use your version of this file under
+ * the terms of any one of the MPL, the GPL or the LGPL.
+ *
+ * ***** END LICENSE BLOCK ***** */
+
+#include "mozilla/Mutex.h"
+#include "nsStreamUtils.h"
+
+#include "nsCCNxMediaInputStream.h"
+#include "nsCCNxTransport.h"
+#include "nsCCNxError.h"
+
+using namespace mozilla;
+
+#if defined(PR_LOGGING)
+extern PRLogModuleInfo* gCCNxLog;
+#endif
+#define LOG(args)         PR_LOG(gCCNxLog, PR_LOG_DEBUG, args)
+
+NS_IMPL_QUERY_INTERFACE2(nsCCNxMediaInputStream,
+                         nsIInputStream,
+                         nsIAsyncInputStream);
+
+nsCCNxMediaInputStream::nsCCNxMediaInputStream(nsCCNxTransport* trans)
+    : mTransport(trans)
+    , mReaderRefCnt(0)
+    , mByteCount(0)
+    , mCCNxStream(NULL)
+    , mCondition(NS_OK)
+    , mCallbackFlags(0) {
+  LOG(("create nsCCNxMediaInputStream @%p", this));
+}
+
+nsCCNxMediaInputStream::~nsCCNxMediaInputStream() {
+  LOG(("destroy nsCCNxMediaInputStream @%p", this));
+}
+
+void
+nsCCNxMediaInputStream::OnCCNxReady(nsresult condition) {
+    // not impletmented yet
+}
+
+
+//-----------------------------------------------------------------------------
+// nsISupports Methods
+
+NS_IMETHODIMP_(nsrefcnt)
+nsCCNxMediaInputStream::AddRef()
+{
+  NS_AtomicIncrementRefcnt(mReaderRefCnt);
+  LOG(("AddRef nsCCNxMediaInputStream @%p", this));
+
+  return mTransport->AddRef();
+}
+
+NS_IMETHODIMP_(nsrefcnt)
+nsCCNxMediaInputStream::Release()
+{
+  if (NS_AtomicDecrementRefcnt(mReaderRefCnt) == 0)
+    Close();
+  LOG(("Release nsCCNxMediaInputStream @%p", this));
+  return mTransport->Release();
+}
+
+//-----------------------------------------------------------------------------
+// nsIInputStream Methods
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::Close() {
+  return CloseWithStatus(NS_BASE_STREAM_CLOSED);
+}
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::Available(PRUint32 *avail) {
+  // currently not being used
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::Read(char *buf, PRUint32 count, PRUint32 *countRead) {
+  int res;
+
+  LOG(("nsCCNxMediaInputStream::Read request, count=%d\n", count));
+  //  return NS_ERROR_NOT_IMPLEMENTED;
+  int byteRead = 0;
+  int byteLeft = count;
+
+  nsresult rv;
+  {
+    MutexAutoLock lock(mTransport->mLock);
+
+    if (NS_FAILED(mCondition))
+      return (mCondition == NS_BASE_STREAM_CLOSED) ? NS_OK : mCondition;
+
+    if (!mCCNxStream) {
+      LOG(("nsCCNxMediaInputStream CCNX_GetLocked"));
+      mCCNxStream = mTransport->CCNX_GetLocked();
+    }
+
+    if (!mCCNxStream) {
+      LOG(("nsCCNxMediaInputStream Error: NS_BASE_STREAM_CLOSED"));
+      return NS_BASE_STREAM_CLOSED;
+    }
+
+    // Actually reading process
+    // ccn_fetch_read is non-blocking, so we have to block it manually
+    // however, the bright side is that we don't need to move ccn_fetch_open
+    // here. It must be non-blocking as well.
+    // res = ccn_fetch_read(mCCNxStream, buf, count);
+
+    while ((res = ccn_fetch_read(mCCNxStream, &buf[byteRead], byteLeft)) != 0) {
+      if (res > 0) {
+        byteRead += res;
+        if (res < byteLeft) {
+          LOG(("nsCCNxMediaInputStream::Read insufficient ccn_fetch_read "
+               "res=%d byteLeft=%d",
+               res, byteLeft));
+          // this ensures that byteLeft is always greater than 0
+          byteLeft -= res;
+        } else if (res == byteLeft) {
+          LOG(("nsCCNxMediaInputStream::Read ccn_fetch_read complete"));
+          break;
+        } else {
+          LOG(("WARNNING!!! nsCCNxMediaInputStream::Read ccn_fetch_read overread "
+               "res=%d byteLeft=%d",
+               res, byteLeft));
+          break;
+        }
+      } else if (res == CCN_FETCH_READ_NONE) {
+        if (ccn_run(mTransport->mCCNx, 1000) < 0) {
+          LOG(("nsCCNxMediaInputStream::Read CCN_FETCH_READ_NONE"));
+          res = CCN_FETCH_READ_NONE;
+          break;
+        }
+      } else if (res == CCN_FETCH_READ_TIMEOUT) {
+        ccn_reset_timeout(mCCNxStream);
+        if (ccn_run(mTransport->mCCNx, 1000) < 0) {
+          LOG(("nsCCNxMediaInputStream::Read CCN_FETCH_READ_TIMEOUT"));
+          res = CCN_FETCH_READ_NONE;
+          break;
+        }
+      } else if (res == CCN_FETCH_READ_END) {
+        // All data has been transfered via CCNx
+        LOG(("nsCCNxMediaInputStream::Read CCN_FETCH_READ_END"));
+        LOG(("nsCCNxMediaInputStream CCNX_ReleaseLocked"));
+        mTransport->CCNX_ReleaseLocked(mCCNxStream);
+        mCCNxStream = NULL;
+        break;
+      }
+    }
+  }
+
+  mCondition = ErrorAccordingToCCNX(res);
+  mByteCount += byteRead;
+  *countRead = byteRead;
+  rv = mCondition;
+  LOG(("nsCCNxMediaInputStream::Read count=%d countRead=%d mByteCount=%d",
+       count, *countRead, mByteCount));
+  return rv;
+}
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::ReadSegments(nsWriteSegmentFun writer, void *closure,
+                                PRUint32 count, PRUint32 *countRead) {
+  LOG(("nsCCNxMediaInputStream::ReadSegments NOT_IMPLEMENTED"));
+  // CCNx stream is unbuffered
+  return NS_ERROR_NOT_IMPLEMENTED;
+}
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::IsNonBlocking(bool *nonblocking) {
+  *nonblocking = true;
+  return NS_OK;
+}
+
+//-----------------------------------------------------------------------------
+// nsIAsyncInputStream Methods
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::CloseWithStatus(nsresult reason) {
+  // minic nsSocketInputStream::CloseWithStatus
+
+  // may be called from any thread
+  nsresult rv;
+  {
+    MutexAutoLock lock(mTransport->mLock);
+
+    if (NS_SUCCEEDED(mCondition))
+      rv = mCondition = reason;
+    else
+      rv = NS_OK;
+  }
+  //  if (NS_FAILED(rv))
+  //    mTransport->OnInputClosed(rv);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsCCNxMediaInputStream::AsyncWait(nsIInputStreamCallback *callback,
+                             PRUint32 flags,
+                             PRUint32 amount,
+                             nsIEventTarget *target) {
+  // copied from nsSocketInputStream::AsyncWait
+  nsCOMPtr<nsIInputStreamCallback> directCallback;
+  {
+    MutexAutoLock lock(mTransport->mLock);
+
+    if (callback && target) {
+      nsCOMPtr<nsIInputStreamCallback> temp;
+      nsresult rv = NS_NewInputStreamReadyEvent(getter_AddRefs(temp),
+                                                callback, target);
+      if (NS_FAILED(rv)) return rv;
+      mCallback = temp;
+    }
+    else {
+      mCallback = callback;
+    }
+    
+    if (NS_FAILED(mCondition))
+      directCallback.swap(mCallback);
+    else
+      mCallbackFlags = flags;
+  }
+  if (directCallback)
+    directCallback->OnInputStreamReady(this);
+  else
+    return NS_ERROR_NOT_IMPLEMENTED;
+
+  LOG(("nsCCNxMediaInputStream::AsyncWait"));
+  return NS_OK;
+}
+

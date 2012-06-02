@@ -38,6 +38,9 @@
 
 #include "nsCCNxError.h"
 #include "nsCCNxTransport.h"
+#include "nsCCNxInputStream.h"
+#include "nsCCNxMediaInputStream.h"
+#include "nsCCNxUtils.h"
 
 #include "nsNetSegmentUtils.h"
 #include "nsStreamUtils.h"
@@ -61,25 +64,33 @@ nsCCNxTransport::nsCCNxTransport()
       mCCNxStream(nsnull),
       mCCNxRef(0),
       mCCNxOnline(false),
-      mInputClosed(true),
-      mInput(this) {
-
+      mInputClosed(true)
+{
   LOG(("create nsCCNxTransport @%p", this));
 }
 
-nsCCNxTransport::~nsCCNxTransport() {
+nsCCNxTransport::~nsCCNxTransport()
+{
   mService->Shutdown();
   LOG(("destroy nsCCNxTransport @%p", this));
 }
 
 nsresult
-nsCCNxTransport::Init(const char *ccnxName) {
-  // the current implementation only allows one ccn name
+nsCCNxTransport::Init(const char *ccnxName)
+{
   int res;
   mService = new nsCCNxTransportService();
   mService->Init();
 
-  // create ccn connection
+  /* decide whether the user is requesting a normal file or an NDN stream */
+  if (nsCCNxUtils::IsNDNStreamName(ccnxName)) {
+    mInput = new nsCCNxInputStream(this);
+  }
+  else {
+    mInput = new nsCCNxMediaInputStream(this);
+  }
+
+  /* create ccn connection */
   mCCNx = ccn_create();
   res = ccn_connect(mCCNx, NULL);
   if (res < 0) {
@@ -87,7 +98,7 @@ nsCCNxTransport::Init(const char *ccnxName) {
     return NS_ERROR_CCNX_UNAVAIL;
   }
 
-  // create name buffer
+  /* create name buffer */
   mCCNxName = ccn_charbuf_create();
   mCCNxName->length = 0;
   res = ccn_name_from_uri(mCCNxName, ccnxName);
@@ -97,10 +108,10 @@ nsCCNxTransport::Init(const char *ccnxName) {
     return NS_ERROR_CCNX_INVALID_NAME;
   }
 
-  // initialize ccn fetch
+  /* initialize ccn fetch */
   mCCNxFetch = ccn_fetch_new(mCCNx);
 
-  // initialize interest template (mCCNxTmpl)
+  /* initialize interest template (mCCNxTmpl) */
   CCNX_MakeTemplate(0);
 
   // initialize ccn stream
@@ -123,7 +134,7 @@ nsCCNxTransport::OpenInputStream(PRUint32 flags,
 
   LOG(("nsCCNxTransport::OpenInputStream [this=%x flags=%x]\n",
        this, flags));
-  NS_ENSURE_TRUE(!mInput.IsReferenced(), NS_ERROR_UNEXPECTED);
+  //  NS_ENSURE_TRUE(!mInput->IsReferenced(), NS_ERROR_UNEXPECTED);
 
   nsresult rv;
   nsCOMPtr<nsIAsyncInputStream> pipeIn;
@@ -144,13 +155,13 @@ nsCCNxTransport::OpenInputStream(PRUint32 flags,
     // no callback for NS_AsyncCopy, the output will be directly push into the 
     // pipe the thread at the other size of the pipe (pipeOut's OnInputStreamReady)
     // should deal with callback.
-    rv = NS_AsyncCopy(&mInput, pipeOut, mService,
+    rv = NS_AsyncCopy(mInput, pipeOut, mService,
                       NS_ASYNCCOPY_VIA_WRITESEGMENTS, segsize);
 
     *result = pipeIn;
 
   } else {
-    *result = &mInput;
+    *result = mInput;
   }
 
   mInputClosed = false;
@@ -164,16 +175,18 @@ NS_IMETHODIMP
 nsCCNxTransport::OpenOutputStream(PRUint32 flags,
                                   PRUint32 segsize,
                                   PRUint32 segcount,
-                                  nsIOutputStream **result) {
+                                  nsIOutputStream **result)
+{
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 
 NS_IMETHODIMP
-nsCCNxTransport::Close(nsresult reason) {
+nsCCNxTransport::Close(nsresult reason) 
+{
   if (NS_SUCCEEDED(reason))
     reason = NS_BASE_STREAM_CLOSED;
 
-  mInput.CloseWithStatus(reason);
+  mInput->CloseWithStatus(reason);
   mInputClosed = true;
   return NS_OK;
 }

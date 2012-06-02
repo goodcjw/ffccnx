@@ -155,8 +155,8 @@ nsCCNxChannel::BeginPumpingData() {
 
 nsresult
 nsCCNxChannel::OpenContentStream(bool async, nsIInputStream **stream,
-                                nsIChannel** channel) {
-  // 
+                                nsIChannel** channel)
+{
   if (!async)
     return NS_ERROR_NOT_IMPLEMENTED;
 

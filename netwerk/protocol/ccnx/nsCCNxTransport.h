@@ -39,7 +39,6 @@
 #ifndef nsCCNxTransport_h__
 #define nsCCNxTransport_h__
 
-#include "nsCCNxInputStream.h"
 #include "nsCCNxTransportService.h"
 
 #include "mozilla/Mutex.h"
@@ -54,7 +53,8 @@ extern "C" {
 #include <ccn/fetch.h>
 }
 
-class nsCCNxTransport : public nsITransport {
+class nsCCNxTransport : public nsITransport
+{
   typedef mozilla::Mutex Mutex;
 
 public:
@@ -88,15 +88,16 @@ private:
   struct ccn_charbuf               *mCCNxTmpl;
   struct ccn_fetch_stream          *mCCNxStream;
 
-  // mCCNx is closed when mFDref goes to zero
+  /* mCCNx is closed when mFDref goes to zero */
   nsrefcnt                          mCCNxRef;
   bool                              mCCNxOnline;
   bool                              mInputClosed;
 
-  nsCCNxInputStream                 mInput;
-  nsCCNxTransportService*           mService;
+  nsCOMPtr<nsIAsyncInputStream>     mInput;
+  nsCCNxTransportService           *mService;
 
   friend class nsCCNxInputStream;
+  friend class nsCCNxMediaInputStream;
 };
 
 #endif // nsCCNxTransport_h__

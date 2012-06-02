@@ -36,8 +36,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsCCNxInputStream_h__
-#define nsCCNxInputStream_h__
+#ifndef nsCCNxMediaInputStream_h__
+#define nsCCNxMediaInputStream_h__
 
 #include "nsIAsyncInputStream.h"
 #include "nsIEventTarget.h"
@@ -45,14 +45,14 @@
 
 class nsCCNxTransport;
 
-class nsCCNxInputStream : public nsIAsyncInputStream {
+class nsCCNxMediaInputStream : public nsIAsyncInputStream {
 public:
   NS_DECL_ISUPPORTS_INHERITED
   NS_DECL_NSIINPUTSTREAM
   NS_DECL_NSIASYNCINPUTSTREAM
 
-  nsCCNxInputStream(nsCCNxTransport *);
-  virtual ~nsCCNxInputStream();
+  nsCCNxMediaInputStream(nsCCNxTransport *);
+  virtual ~nsCCNxMediaInputStream();
 
   // called by the ndn transport on the ndn thread ??
   void OnCCNxReady(nsresult condition);
@@ -68,11 +68,20 @@ private:
   PRUint64                            mByteCount;
 
   // access to these is protected by mTransport->mLock
+
+  /* names used to access ndn data */
+  struct ccn_charbuf                 *mMediaName;
+  struct ccn_charbuf                 *mVideoName;
+  struct ccn_charbuf                 *mVideoNameSegments;
+  struct ccn_charbuf                 *mVideoNameFrames;
+  struct ccn_charbuf                 *mAudioName;
+  struct ccn_charbuf                 *mAudioNameSegments;
+  struct ccn_charbuf                 *mAudioNameFrames;
+  
   struct ccn_fetch_stream            *mCCNxStream;
   nsresult                            mCondition;
   nsCOMPtr<nsIInputStreamCallback>    mCallback;
   PRUint32                            mCallbackFlags;
-
 };
 
-#endif // nsCCNxInputStream_h__
+#endif // nsCCNxMediaInputStream_h__

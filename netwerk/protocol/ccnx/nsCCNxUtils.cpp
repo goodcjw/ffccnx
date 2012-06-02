@@ -36,43 +36,20 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsCCNxInputStream_h__
-#define nsCCNxInputStream_h__
+#include "nsCCNxUtils.h"
+#include <cstring>
 
-#include "nsIAsyncInputStream.h"
-#include "nsIEventTarget.h"
-#include "nsCOMPtr.h"
+using namespace nsCCNxUtils;
 
-class nsCCNxTransport;
+bool nsCCNxUtils::IsNDNStreamName(const char* ccnxName)
+{
+  size_t nameLen = strlen(ccnxName);
+  size_t suffixLen = strlen(CCNX_STREAM_SUFFIX);
+  int r;
 
-class nsCCNxInputStream : public nsIAsyncInputStream {
-public:
-  NS_DECL_ISUPPORTS_INHERITED
-  NS_DECL_NSIINPUTSTREAM
-  NS_DECL_NSIASYNCINPUTSTREAM
+  if (nameLen <= suffixLen)
+    return false;
 
-  nsCCNxInputStream(nsCCNxTransport *);
-  virtual ~nsCCNxInputStream();
-
-  // called by the ndn transport on the ndn thread ??
-  void OnCCNxReady(nsresult condition);
-
-  /* TODO not necessary any more */
-  bool IsReferenced()     { return mReaderRefCnt > 0; }
-  nsresult Condition()    { return mCondition; }
-  //  PRUint64 ByteCount()    { return mByteCount; }
-
-private:
-  nsCCNxTransport                    *mTransport;
-  nsrefcnt                            mReaderRefCnt;
-  PRUint64                            mByteCount;
-
-  // access to these is protected by mTransport->mLock
-  struct ccn_fetch_stream            *mCCNxStream;
-  nsresult                            mCondition;
-  nsCOMPtr<nsIInputStreamCallback>    mCallback;
-  PRUint32                            mCallbackFlags;
-
-};
-
-#endif // nsCCNxInputStream_h__
+  r = strncmp(CCNX_STREAM_SUFFIX, &ccnxName[nameLen-suffixLen], suffixLen);
+  return (r == 0);
+}
