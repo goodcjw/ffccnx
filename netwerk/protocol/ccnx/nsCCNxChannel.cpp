@@ -38,6 +38,7 @@
 
 #include "nsCCNxChannel.h"
 #include "nsCCNxCore.h"
+#include "nsCCNxUtils.h"
 
 #include "nsChannelProperties.h"
 #include "nsMimeTypes.h"
@@ -171,14 +172,27 @@ nsCCNxChannel::OpenContentStream(bool async, nsIInputStream **stream,
     return rv;
   }
 
-  // Use file extension to infer content type
+  nsCAutoString strURI;
   nsCAutoString contentType;
-  nsCOMPtr<nsIMIMEService> mime = do_GetService("@mozilla.org/mime;1", &rv);
-  if (NS_SUCCEEDED(rv)) {
-    mime->GetTypeFromURI(mURI, contentType);
+  mURI->GetAsciiSpec(strURI);
+
+  // Use file extension to infer content type
+  if (nsCCNxUtils::IsNDNStreamName(strURI.get())) {
+    /* TODO add audio support later.
+     * To add audio, we may need an entire different channel, i.e. we need two
+     * channels to handle to same uri. Maybe we should pick a separate protocol
+     * prefix instead
+     */
+    contentType = "x-ccnx-video/webm";
+    LOG(("nsCCNxChannel SetContentType by IsNDNStreamName"));
+  } else {
+    nsCOMPtr<nsIMIMEService> mime = do_GetService("@mozilla.org/mime;1", &rv); 
+    if (NS_SUCCEEDED(rv)) {
+      mime->GetTypeFromURI(mURI, contentType);
+    }
+    LOG(("nsCCNxChannel SetContentType by mime->GetTypeFromURI"));
   }
   if (!contentType.IsEmpty()) {
-    LOG(("nsCCNxChannel SetContentType by mime->GetTypeFromURI"));
     SetContentType(contentType);
   }
 
